@@ -1,9 +1,12 @@
 package com.ipl.ipldashboard.data;
 
 import com.ipl.ipldashboard.model.Match;
+import org.springframework.batch.core.Job;
+import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
 import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
+import org.springframework.batch.core.launch.support.RunIdIncrementer;
 import org.springframework.batch.item.database.BeanPropertyItemSqlParameterSourceProvider;
 import org.springframework.batch.item.database.JdbcBatchItemWriter;
 import org.springframework.batch.item.database.builder.JdbcBatchItemWriterBuilder;
@@ -58,4 +61,25 @@ public class BatchConfig {
                 .build();
     }
 
+    @Bean
+    public Job importUserJob(JobCompletionNotificationListener listener, Step step1) {
+        return jobBuilderFactory
+                .get("importUserJob")
+                .incrementer(new RunIdIncrementer())
+                .listener(listener)
+                .flow(step1)
+                .end()
+                .build();
+    }
+
+    @Bean
+    public Step step1(JdbcBatchItemWriter<Match> writer) {
+        return stepBuilderFactory
+                .get("step1")
+                .<MatchInput, Match> chunk(10)
+                .reader(reader())
+                .processor(processor())
+                .writer(writer)
+                .build();
+    }
 }
